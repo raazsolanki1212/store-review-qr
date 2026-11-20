@@ -21,13 +21,15 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-Set `NEXT_PUBLIC_APP_URL` to your public URL before printing QR codes (they embed that base URL). Add one or more server-side AI keys to `.env.local` to enable draft generation:
+Set `NEXT_PUBLIC_APP_URL` to your public URL before printing QR codes on other hosts (they embed that base URL). On Vercel, the app uses its stable project production domain before any deployment-specific URL. Add one or more server-side AI keys to `.env.local` to enable draft generation:
 
 - `OPENAI_API_KEY` (optional model override: `OPENAI_MODEL`)
 - `GEMINI_API_KEY` (optional model override: `GEMINI_MODEL`)
 - `GROQ_API_KEY` (optional model override: `GROQ_MODEL`, defaults to `openai/gpt-oss-120b`)
 
 For Vercel, add these in **Project Settings → Environment Variables**. Do not prefix AI keys with `NEXT_PUBLIC_`; customers' notes are sent to whichever provider they select.
+
+After changing the QR base URL in production, download and print fresh QR codes. Previously printed codes still contain the old deployment-specific URL.
 
 ## Production database
 
