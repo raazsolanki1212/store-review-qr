@@ -1,15 +1,11 @@
-import { createHmac, scrypt, timingSafeEqual } from "node:crypto";
-import { promisify } from "node:util";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { neon, type NeonQueryFunction } from "@neondatabase/serverless";
 
 const COOKIE_NAME = "reviewqr_admin_session";
 const SESSION_TTL_SECONDS = 7 * 24 * 60 * 60;
-const scryptAsync = promisify(scrypt);
 
-let databaseClient: NeonQueryFunction<false, false> | undefined;
-let schemaReady: Promise<void> | undefined;
+type AdminCredential = { id: string; password: string };
 
 function getAuthSecret(): string {
   const secret = process.env.AUTH_SECRET?.trim();
@@ -19,67 +15,72 @@ function getAuthSecret(): string {
   return secret;
 }
 
-async function getAdminDatabase(): Promise<NeonQueryFunction<false, false> | null> {
-  const connectionString = process.env.DATABASE_URL?.trim();
-  if (!connectionString) return null;
-
-  if (!databaseClient) databaseClient = neon(connectionString);
-  if (!schemaReady) {
-    schemaReady = databaseClient`
-      CREATE TABLE IF NOT EXISTS admin_users (
-        id TEXT PRIMARY KEY,
-        password_hash TEXT NOT NULL,
-        updated_at TIMESTAMPTZ NOT NULL
-      )
-    `
-      .then(() => undefined)
-      .catch((error: unknown) => {
-        schemaReady = undefined;
-        throw error;
-      });
+function validateAdminCredential(value: unknown): AdminCredential {
+  if (
+    !value ||
+    typeof value !== "object" ||
+    !("id" in value) ||
+    !("password" in value) ||
+    typeof value.id !== "string" ||
+    typeof value.password !== "string"
+  ) {
+    throw new Error("Each ADMIN_CREDENTIALS entry must include an ID and password.");
   }
-  await schemaReady;
-  return databaseClient;
+
+  const id = value.id.trim();
+  const password = value.password;
+  if (!id || id.length > 256 || password.length < 12 || password.length > 1024) {
+    throw new Error(
+      "Admin IDs must be 1–256 characters and passwords must be 12–1024 characters.",
+    );
+  }
+
+  return { id, password };
 }
 
-async function verifyPassword(password: string, passwordHash: string): Promise<boolean> {
-  const [salt, encodedHash] = passwordHash.split(":");
-  if (!salt || !encodedHash) return false;
+function getAdminCredentials(): AdminCredential[] {
+  const configuredCredentials = process.env.ADMIN_CREDENTIALS?.trim();
+  if (configuredCredentials) {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(configuredCredentials);
+    } catch {
+      throw new Error("ADMIN_CREDENTIALS must be a valid JSON array.");
+    }
 
-  const expected = Buffer.from(encodedHash, "base64url");
-  if (expected.length !== 64) return false;
-  const actual = (await scryptAsync(password, salt, expected.length)) as Buffer;
-  return timingSafeEqual(actual, expected);
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      throw new Error("ADMIN_CREDENTIALS must contain at least one account.");
+    }
+    return parsed.map(validateAdminCredential);
+  }
+
+  const id = process.env.ADMIN_ID?.trim();
+  const password = process.env.ADMIN_PASSWORD;
+  if (id && password) return [validateAdminCredential({ id, password })];
+  if (id || password) {
+    throw new Error("Set both ADMIN_ID and ADMIN_PASSWORD, or use ADMIN_CREDENTIALS.");
+  }
+  throw new Error("Set ADMIN_ID and ADMIN_PASSWORD or configure ADMIN_CREDENTIALS.");
+}
+
+function constantTimeEquals(candidate: string, expected: string): boolean {
+  const candidateBuffer = Buffer.from(candidate);
+  const expectedBuffer = Buffer.from(expected);
+  return (
+    candidateBuffer.length === expectedBuffer.length &&
+    timingSafeEqual(candidateBuffer, expectedBuffer)
+  );
 }
 
 export async function verifyAdminCredentials(
   id: string,
   password: string,
 ): Promise<boolean> {
-  const database = await getAdminDatabase();
-  if (database) {
-    const rows = await database`
-      SELECT password_hash FROM admin_users WHERE id = ${id} LIMIT 1
-    `;
-    return rows[0]
-      ? verifyPassword(password, String(rows[0].password_hash))
-      : false;
-  }
-
-  const configuredId = process.env.ADMIN_ID;
-  const configuredPassword = process.env.ADMIN_PASSWORD;
-  if (!configuredId || !configuredPassword) return false;
-
-  const candidateId = Buffer.from(id);
-  const expectedId = Buffer.from(configuredId);
-  const candidatePassword = Buffer.from(password);
-  const expectedPassword = Buffer.from(configuredPassword);
-
-  return (
-    candidateId.length === expectedId.length &&
-    candidatePassword.length === expectedPassword.length &&
-    timingSafeEqual(candidateId, expectedId) &&
-    timingSafeEqual(candidatePassword, expectedPassword)
+  const credentials = getAdminCredentials();
+  return credentials.some(
+    (credential) =>
+      constantTimeEquals(id, credential.id) &&
+      constantTimeEquals(password, credential.password),
   );
 }
 

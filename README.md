@@ -27,7 +27,13 @@ Set `NEXT_PUBLIC_APP_URL` to your public URL before printing QR codes on other h
 - `GEMINI_API_KEY` (optional model override: `GEMINI_MODEL`)
 - `GROQ_API_KEY` (optional model override: `GROQ_MODEL`, defaults to `openai/gpt-oss-120b`)
 
-The store dashboard at `/` requires an administrator login. Set `AUTH_SECRET` to a random secret of at least 32 characters. For local development without `DATABASE_URL`, set `ADMIN_ID` and `ADMIN_PASSWORD` in `.env.local`. For Neon, set `DATABASE_URL`, `ADMIN_ID`, and `ADMIN_PASSWORD`, then run `npm run seed:admin`; the seeder stores only a scrypt password hash in `admin_users`. Use an administrator password with at least 12 characters. Keep all of these values server-side and never add a `NEXT_PUBLIC_` prefix.
+The store dashboard at `/` requires an administrator login. Set `AUTH_SECRET` to a random secret of at least 32 characters. Configure one account with `ADMIN_ID` and `ADMIN_PASSWORD`, or multiple accounts with `ADMIN_CREDENTIALS` as a JSON array, for example:
+
+```env
+ADMIN_CREDENTIALS=[{"id":"owner","password":"a-strong-password-of-12-chars"},{"id":"manager","password":"another-strong-password"}]
+```
+
+Each password must be at least 12 characters. These credentials are read from environment variables at login and are not stored in the database. For Vercel, add `AUTH_SECRET` and the admin credential variables in **Project Settings → Environment Variables**. Keep them server-side and never add a `NEXT_PUBLIC_` prefix.
 
 Generate a signing secret with:
 
