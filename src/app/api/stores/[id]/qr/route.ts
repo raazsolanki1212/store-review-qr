@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/auth";
 import { getStoreById } from "@/lib/db";
 import { generateQrPngBuffer } from "@/lib/qr";
 import { getReviewShortUrl } from "@/lib/urls";
@@ -6,6 +7,9 @@ import { getReviewShortUrl } from "@/lib/urls";
 type Params = { params: Promise<{ id: string }> };
 
 export async function GET(request: Request, { params }: Params) {
+  const unauthorized = await requireAdmin();
+  if (unauthorized) return unauthorized;
+
   const { id } = await params;
   const store = await getStoreById(id);
   if (!store) {

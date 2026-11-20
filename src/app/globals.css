@@ -99,6 +99,17 @@ a:hover {
   gap: 1.25rem;
 }
 
+.dashboard-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin: -1.25rem 0 1rem;
+}
+
+.login-panel {
+  width: min(460px, 100%);
+  margin: 0 auto;
+}
+
 .panel {
   background: rgba(255, 255, 255, 0.72);
   border: 1px solid var(--line);

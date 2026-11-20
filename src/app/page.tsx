@@ -1,12 +1,15 @@
 import { Dashboard } from "@/components/Dashboard";
+import { AdminLogin } from "@/components/AdminLogin";
+import { isAdminAuthenticated } from "@/lib/auth";
 import { listStores } from "@/lib/db";
 import { getAppBaseUrl } from "@/lib/urls";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const stores = await listStores();
-  const baseUrl = getAppBaseUrl();
+  const authenticated = await isAdminAuthenticated();
+  const stores = authenticated ? await listStores() : [];
+  const baseUrl = authenticated ? getAppBaseUrl() : "";
 
   return (
     <main className="shell">
@@ -19,7 +22,11 @@ export default async function HomePage() {
         </p>
       </header>
 
-      <Dashboard initialStores={stores} baseUrl={baseUrl} />
+      {authenticated ? (
+        <Dashboard initialStores={stores} baseUrl={baseUrl} />
+      ) : (
+        <AdminLogin />
+      )}
 
       <p className="foot-note">
         AI creates an editable draft from the customer’s own notes. This app never

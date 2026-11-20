@@ -27,6 +27,14 @@ Set `NEXT_PUBLIC_APP_URL` to your public URL before printing QR codes on other h
 - `GEMINI_API_KEY` (optional model override: `GEMINI_MODEL`)
 - `GROQ_API_KEY` (optional model override: `GROQ_MODEL`, defaults to `openai/gpt-oss-120b`)
 
+The store dashboard at `/` requires an administrator login. Set `AUTH_SECRET` to a random secret of at least 32 characters. For local development without `DATABASE_URL`, set `ADMIN_ID` and `ADMIN_PASSWORD` in `.env.local`. For Neon, set `DATABASE_URL`, `ADMIN_ID`, and `ADMIN_PASSWORD`, then run `npm run seed:admin`; the seeder stores only a scrypt password hash in `admin_users`. Use an administrator password with at least 12 characters. Keep all of these values server-side and never add a `NEXT_PUBLIC_` prefix.
+
+Generate a signing secret with:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
+```
+
 For Vercel, add these in **Project Settings → Environment Variables**. Do not prefix AI keys with `NEXT_PUBLIC_`; customers' notes are sent to whichever provider they select.
 
 After changing the QR base URL in production, download and print fresh QR codes. Previously printed codes still contain the old deployment-specific URL.
@@ -70,6 +78,8 @@ The draft-generation endpoint is public because QR visitors need to use it. Conf
 | `DELETE` | `/api/stores/:id` | Delete store |
 | `GET` | `/api/stores/:id/qr` | Download PNG QR |
 | `GET` | `/api/stores/:id/qr?format=json` | QR data URL + short link |
+| `POST` | `/api/auth/login` | Sign in with `{ id, password }` |
+| `POST` | `/api/auth/logout` | Sign out |
 | `GET` | `/r/:slug` | Track a scan and redirect to the review-draft page |
 | `POST` | `/api/reviews/generate` | Generate a draft from `{ slug, provider, categories }` |
 
