@@ -29,9 +29,9 @@ function validateAdminCredential(value: unknown): AdminCredential {
 
   const id = value.id.trim();
   const password = value.password;
-  if (!id || id.length > 256 || password.length < 12 || password.length > 1024) {
+  if (!id || id.length > 256 || !password || password.length > 1024) {
     throw new Error(
-      "Admin IDs must be 1–256 characters and passwords must be 12–1024 characters.",
+      "Admin IDs must be 1–256 characters and passwords must be 1–1024 characters.",
     );
   }
 

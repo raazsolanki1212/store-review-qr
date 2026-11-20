@@ -33,7 +33,7 @@ The store dashboard at `/` requires an administrator login. Set `AUTH_SECRET` to
 ADMIN_CREDENTIALS=[{"id":"owner","password":"a-strong-password-of-12-chars"},{"id":"manager","password":"another-strong-password"}]
 ```
 
-Each password must be at least 12 characters. These credentials are read from environment variables at login and are not stored in the database. For Vercel, add `AUTH_SECRET` and the admin credential variables in **Project Settings → Environment Variables**. Keep them server-side and never add a `NEXT_PUBLIC_` prefix.
+These credentials are read from environment variables at login and are not stored in the database. Use strong, unique passwords. For Vercel, add `AUTH_SECRET` and the admin credential variables in **Project Settings → Environment Variables**. Keep them server-side and never add a `NEXT_PUBLIC_` prefix.
 
 Generate a signing secret with:
 
