@@ -19,8 +19,8 @@ export function Dashboard({ initialStores, baseUrl }: Props) {
         <header className="panel-header">
           <h2>Add a store</h2>
           <p>
-            Link a Google Place ID. The QR opens a page where customers can draft a
-            review from their own experience before continuing to Google.
+            Paste a Google Maps shared link or Place ID. The QR opens a page where
+            customers can draft a review before continuing to Google.
           </p>
         </header>
         <StoreForm

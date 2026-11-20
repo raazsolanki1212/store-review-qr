@@ -3,7 +3,7 @@ import path from "path";
 import { nanoid } from "nanoid";
 import type { CreateStoreInput, Store } from "./types";
 import { slugify } from "./slug";
-import { isValidPlaceId } from "./google";
+import { normalizeGoogleMapsInput } from "./google";
 
 const IS_VERCEL = Boolean(process.env.VERCEL);
 const DATA_DIR = IS_VERCEL
@@ -73,11 +73,9 @@ export async function getStoreBySlug(slug: string): Promise<Store | null> {
 
 export async function createStore(input: CreateStoreInput): Promise<Store> {
   const name = input.name.trim();
-  const placeId = input.placeId.trim();
+  const placeId = normalizeGoogleMapsInput(input.placeId);
 
   if (!name) throw new Error("Store name is required");
-  if (!isValidPlaceId(placeId)) throw new Error("Invalid Google Place ID");
-
   const db = await readDb();
   const now = new Date().toISOString();
   const store: Store = {
@@ -106,11 +104,12 @@ export async function updateStore(
 
   const current = db.stores[index];
   const name = patch.name?.trim() ?? current.name;
-  const placeId = patch.placeId?.trim() ?? current.placeId;
+  const placeId =
+    patch.placeId !== undefined
+      ? normalizeGoogleMapsInput(patch.placeId)
+      : current.placeId;
 
   if (!name) throw new Error("Store name is required");
-  if (!isValidPlaceId(placeId)) throw new Error("Invalid Google Place ID");
-
   const updated: Store = {
     ...current,
     name,

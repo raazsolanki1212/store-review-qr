@@ -60,24 +60,16 @@ export function StoreForm({ onCreated }: Props) {
       </div>
 
       <div className="field">
-        <label htmlFor="placeId">Google Place ID</label>
+        <label htmlFor="placeId">Google Maps link or Place ID</label>
         <input
           id="placeId"
           value={placeId}
           onChange={(e) => setPlaceId(e.target.value)}
-          placeholder="ChIJ..."
+          placeholder="https://maps.app.goo.gl/... or ChIJ..."
           required
         />
         <p className="hint">
-          Find it in Google Maps → Share → embed or via{" "}
-          <a
-            href="https://developers.google.com/maps/documentation/places/web-service/place-id"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Place ID finder
-          </a>
-          .
+          Open Google Maps → Share → Copy link, then paste the shared URL here.
         </p>
       </div>
 

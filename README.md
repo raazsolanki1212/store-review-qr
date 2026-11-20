@@ -31,7 +31,7 @@ For Vercel, add these in **Project Settings → Environment Variables**. Do not 
 
 ## How it works
 
-1. Add a store with its **Google Place ID**
+1. Add a store with a **Google Maps shared link** or Google Place ID
 2. App creates a short link: `/r/{slug}`
 3. Download / print the QR for that link
 4. Customer scans → we increment the scan count → show the review-draft page
@@ -40,10 +40,11 @@ For Vercel, add these in **Project Settings → Environment Variables**. Do not 
 
 The draft-generation endpoint is public because QR visitors need to use it. Configure usage limits/budgets with your AI provider before sharing QR codes widely. Drafts are not submitted automatically, and the customer should only post an honest review based on their actual experience.
 
-## Find a Place ID
+## Google Maps link or Place ID
 
-- [Google Place ID finder](https://developers.google.com/maps/documentation/places/web-service/place-id)
-- Or from Google Maps share / business profile tools
+- Paste a Google Maps **Share** link directly from the app or browser.
+- Place ID extraction is automatic when the shared URL contains a Place ID.
+- Existing Google Place IDs also remain supported.
 
 ## API (quick)
 

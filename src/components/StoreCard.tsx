@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { Store } from "@/lib/types";
+import { buildGoogleReviewUrl, isValidPlaceId } from "@/lib/google";
 
 type Props = {
   store: Store;
@@ -72,11 +73,11 @@ export function StoreCard({ store, baseUrl, onDeleted }: Props) {
           </a>
           <a
             className="btn-ghost"
-            href={`https://search.google.com/local/writereview?placeid=${encodeURIComponent(store.placeId)}`}
+            href={buildGoogleReviewUrl(store.placeId)}
             target="_blank"
             rel="noreferrer"
           >
-            Open Google review
+            {isValidPlaceId(store.placeId) ? "Open Google review" : "Open Google listing"}
           </a>
           <button
             type="button"
