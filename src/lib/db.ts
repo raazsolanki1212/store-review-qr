@@ -5,8 +5,12 @@ import type { CreateStoreInput, Store } from "./types";
 import { slugify } from "./slug";
 import { isValidPlaceId } from "./google";
 
-const DATA_DIR = path.join(process.cwd(), "data");
+const IS_VERCEL = Boolean(process.env.VERCEL);
+const DATA_DIR = IS_VERCEL
+  ? path.join("/tmp", "store-review-qr")
+  : path.join(process.cwd(), "data");
 const DB_PATH = path.join(DATA_DIR, "stores.json");
+const BUNDLED_DB_PATH = path.join(process.cwd(), "data", "stores.json");
 
 type DbShape = { stores: Store[] };
 
@@ -15,7 +19,15 @@ async function ensureDb(): Promise<void> {
   try {
     await fs.access(DB_PATH);
   } catch {
-    const initial: DbShape = { stores: [] };
+    let initial: DbShape = { stores: [] };
+    if (IS_VERCEL) {
+      try {
+        const bundled = await fs.readFile(BUNDLED_DB_PATH, "utf8");
+        initial = JSON.parse(bundled) as DbShape;
+      } catch {
+        initial = { stores: [] };
+      }
+    }
     await fs.writeFile(DB_PATH, JSON.stringify(initial, null, 2), "utf8");
   }
 }
