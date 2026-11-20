@@ -1,12 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import {
-  isReviewProvider,
-  REVIEW_CATEGORIES,
-  REVIEW_PROVIDERS,
-  type ReviewProvider,
-} from "@/lib/review-types";
+import { REVIEW_CATEGORIES, type ReviewProvider } from "@/lib/review-types";
 
 type Props = {
   slug: string;
@@ -16,7 +11,6 @@ type Props = {
 };
 
 export function ReviewGenerator({ slug, storeName, providers, reviewUrl }: Props) {
-  const [provider, setProvider] = useState<ReviewProvider>(providers[0] ?? "openai");
   const [categories, setCategories] = useState<string[]>([]);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +35,7 @@ export function ReviewGenerator({ slug, storeName, providers, reviewUrl }: Props
       const response = await fetch("/api/reviews/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug, provider, categories }),
+        body: JSON.stringify({ slug, categories }),
       });
       const data: unknown = await response.json();
       if (!data || typeof data !== "object") {
@@ -91,23 +85,6 @@ export function ReviewGenerator({ slug, storeName, providers, reviewUrl }: Props
       ) : (
         <>
           <form className="stack-form" onSubmit={handleGenerate}>
-            <div className="field">
-              <label htmlFor="review-provider">AI model provider</label>
-              <select
-                id="review-provider"
-                value={provider}
-                onChange={(event) => {
-                  if (isReviewProvider(event.target.value)) setProvider(event.target.value);
-                }}
-              >
-                {providers.map((id) => (
-                  <option key={id} value={id}>
-                    {REVIEW_PROVIDERS[id]}
-                  </option>
-                ))}
-              </select>
-            </div>
-
             <fieldset className="category-field">
               <legend>What stood out? Select up to 5 topics.</legend>
               <div className="category-grid">

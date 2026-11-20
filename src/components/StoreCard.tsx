@@ -222,6 +222,9 @@ export function StoreCard({ store, baseUrl, onDeleted }: Props) {
       <div className="store-card-main">
         <div>
           <h3>{store.name}</h3>
+          {store.placeCategory ? (
+            <p className="muted">{store.placeCategory}</p>
+          ) : null}
           {store.address ? <p className="muted">{store.address}</p> : null}
           <p className="meta">
             <span>{store.scanCount} scans</span>

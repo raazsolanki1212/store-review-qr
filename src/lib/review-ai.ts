@@ -10,6 +10,7 @@ const GEMINI_RETRY_DELAYS_MS = [700, 1_500] as const;
 type ReviewDraftInput = {
   provider: ReviewProvider;
   storeName: string;
+  placeCategory?: string;
   categories: string[];
 };
 
@@ -24,13 +25,14 @@ export function getAvailableReviewProviders(): ReviewProvider[] {
 export async function generateReviewDraft({
   provider,
   storeName,
+  placeCategory,
   categories,
 }: ReviewDraftInput): Promise<string> {
   const categoryLabels = categories.map(
     (id) => REVIEW_CATEGORIES.find((category) => category.id === id)?.label ?? id,
   );
   const prompt = [
-    `Write a Google Maps-friendly review for ${storeName}.`,
+    `Write a Google Maps-friendly review for ${storeName}${placeCategory ? `, a ${placeCategory}` : ""}.`,
     `The customer selected these topics as the highlights of their visit: ${categoryLabels.join(", ")}.`,
     "",
     "Write one concise, natural first-person review of 2-4 sentences.",
@@ -93,7 +95,7 @@ async function generateWithGroq(prompt: string): Promise<string> {
     throw new Error(
       reason === "length"
         ? "Groq reached its completion token limit before returning a draft. Please retry."
-        : "Groq returned no draft. Please retry or check the selected model's response.",
+        : "Groq returned no draft. Please retry or check the configured model.",
     );
   }
   return draft;
@@ -163,7 +165,7 @@ async function generateWithGemini(prompt: string): Promise<string> {
     const remaining = deadline - Date.now();
     if (remaining <= 0) {
       throw new Error(
-        "Google Gemini took too long to respond. Please retry or choose OpenAI.",
+        "Google Gemini took too long to respond. Please retry.",
       );
     }
 
@@ -196,7 +198,7 @@ async function generateWithGemini(prompt: string): Promise<string> {
   if (!response?.ok) {
     if (response?.status === 503) {
       throw new Error(
-        "Google Gemini is temporarily unavailable (503). Please try again shortly or choose OpenAI.",
+        "Google Gemini is temporarily unavailable (503). Please try again shortly.",
       );
     }
     throw new Error(

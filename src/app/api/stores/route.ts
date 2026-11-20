@@ -20,6 +20,7 @@ export async function POST(request: Request) {
       name: String(body.name ?? ""),
       placeId: String(body.placeId ?? ""),
       address: body.address ? String(body.address) : undefined,
+      placeCategory: body.placeCategory ? String(body.placeCategory) : undefined,
       slug: body.slug ? String(body.slug) : undefined,
     });
     return NextResponse.json({ store }, { status: 201 });

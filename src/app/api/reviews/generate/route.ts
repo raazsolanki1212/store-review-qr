@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { getStoreBySlug } from "@/lib/db";
-import { generateReviewDraft } from "@/lib/review-ai";
 import {
-  isReviewProvider,
+  generateReviewDraft,
+  getAvailableReviewProviders,
+} from "@/lib/review-ai";
+import {
   REVIEW_CATEGORIES,
   type ReviewProvider,
 } from "@/lib/review-types";
@@ -33,7 +35,6 @@ export async function POST(request: Request) {
   }
 
   if (
-    !isReviewProvider(input.provider) ||
     !Array.isArray(categories) ||
     categories.length === 0 ||
     categories.length > MAX_CATEGORIES ||
@@ -44,7 +45,7 @@ export async function POST(request: Request) {
     )
   ) {
     return NextResponse.json(
-      { error: "Choose an AI provider and between 1 and 5 review topics." },
+      { error: "Choose between 1 and 5 review topics." },
       { status: 400 },
     );
   }
@@ -54,30 +55,43 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Store not found." }, { status: 404 });
   }
 
-  try {
-    const draft = await generateReviewDraft({
-      provider: input.provider as ReviewProvider,
-      storeName: store.name,
-      categories: categories as string[],
-    });
-    return NextResponse.json({ draft });
-  } catch (error) {
-    if (
-      error instanceof Error &&
-      (error.name === "TimeoutError" || error.name === "AbortError")
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            "The AI provider took too long to respond. Please retry or choose another provider.",
-        },
-        { status: 504 },
-      );
-    }
-
-    const message =
-      error instanceof Error ? error.message : "Could not generate a review draft.";
-    const status = message.includes("API key is not configured") ? 503 : 502;
-    return NextResponse.json({ error: message }, { status });
+  const providers = getAvailableReviewProviders();
+  if (providers.length === 0) {
+    return NextResponse.json(
+      { error: "AI drafting is not configured." },
+      { status: 503 },
+    );
   }
+
+  let lastError: unknown;
+  for (const provider of providers as ReviewProvider[]) {
+    try {
+      const draft = await generateReviewDraft({
+        provider,
+        storeName: store.name,
+        placeCategory: store.placeCategory,
+        categories: categories as string[],
+      });
+      return NextResponse.json({ draft });
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  if (
+    lastError instanceof Error &&
+    (lastError.name === "TimeoutError" || lastError.name === "AbortError")
+  ) {
+    return NextResponse.json(
+      { error: "The configured AI model took too long to respond. Please retry." },
+      { status: 504 },
+    );
+  }
+
+  const message =
+    lastError instanceof Error
+      ? lastError.message
+      : "Could not generate a review draft.";
+  const status = message.includes("API key is not configured") ? 503 : 502;
+  return NextResponse.json({ error: message }, { status });
 }

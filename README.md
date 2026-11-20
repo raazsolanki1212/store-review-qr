@@ -80,7 +80,7 @@ The draft-generation endpoint is public because QR visitors need to use it. Conf
 | Method | Path | Purpose |
 |--------|------|---------|
 | `GET` | `/api/stores` | List stores |
-| `POST` | `/api/stores` | Create store `{ name, placeId, address?, slug? }` |
+| `POST` | `/api/stores` | Create store `{ name, placeId, address?, placeCategory?, slug? }` |
 | `DELETE` | `/api/stores/:id` | Delete store |
 | `GET` | `/api/stores/:id/qr` | Download PNG QR |
 | `GET` | `/api/stores/:id/qr?format=json` | QR data URL + short link |

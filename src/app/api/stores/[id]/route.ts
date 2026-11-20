@@ -27,6 +27,8 @@ export async function PATCH(request: Request, { params }: Params) {
       name: body.name !== undefined ? String(body.name) : undefined,
       placeId: body.placeId !== undefined ? String(body.placeId) : undefined,
       address: body.address !== undefined ? String(body.address) : undefined,
+      placeCategory:
+        body.placeCategory !== undefined ? String(body.placeCategory) : undefined,
       slug: body.slug !== undefined ? String(body.slug) : undefined,
     });
     return NextResponse.json({ store });

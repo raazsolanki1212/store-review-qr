@@ -17,6 +17,7 @@ type StoreRow = {
   slug: string;
   place_id: string;
   address: string | null;
+  place_category?: string | null;
   scan_count: number;
   created_at: Date | string;
   updated_at: Date | string;
@@ -35,19 +36,24 @@ async function getDatabase(): Promise<NeonQueryFunction<false, false> | null> {
   }
 
   if (!databaseClient) databaseClient = neon(connectionString);
+  const database = databaseClient;
   if (!schemaReady) {
-    schemaReady = databaseClient`
+    schemaReady = database`
       CREATE TABLE IF NOT EXISTS stores (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         slug TEXT NOT NULL CONSTRAINT stores_slug_unique UNIQUE,
         place_id TEXT NOT NULL,
         address TEXT,
+        place_category TEXT,
         scan_count INTEGER NOT NULL DEFAULT 0,
         created_at TIMESTAMPTZ NOT NULL,
         updated_at TIMESTAMPTZ NOT NULL
       )
     `
+      .then(() =>
+        database`ALTER TABLE stores ADD COLUMN IF NOT EXISTS place_category TEXT`,
+      )
       .then(() => undefined)
       .catch((error: unknown) => {
         schemaReady = undefined;
@@ -65,6 +71,7 @@ function toStore(row: StoreRow): Store {
     slug: row.slug,
     placeId: row.place_id,
     address: row.address ?? undefined,
+    placeCategory: row.place_category?.trim() || undefined,
     scanCount: Number(row.scan_count),
     createdAt: new Date(row.created_at).toISOString(),
     updatedAt: new Date(row.updated_at).toISOString(),
@@ -151,8 +158,12 @@ export async function getStoreBySlug(slug: string): Promise<Store | null> {
 export async function createStore(input: CreateStoreInput): Promise<Store> {
   const name = input.name.trim();
   const placeId = normalizeGoogleMapsInput(input.placeId);
+  const placeCategory = input.placeCategory?.trim() || null;
 
   if (!name) throw new Error("Store name is required");
+  if (placeCategory && placeCategory.length > 100) {
+    throw new Error("Place category must be 100 characters or fewer");
+  }
 
   const database = await getDatabase();
   if (database) {
@@ -164,11 +175,11 @@ export async function createStore(input: CreateStoreInput): Promise<Store> {
     while (true) {
       const rows = await database`
         INSERT INTO stores (
-          id, name, slug, place_id, address, scan_count, created_at, updated_at
+          id, name, slug, place_id, address, place_category, scan_count, created_at, updated_at
         )
         VALUES (
           ${nanoid(12)}, ${name}, ${slug}, ${placeId},
-          ${input.address?.trim() || null}, 0, ${now}, ${now}
+          ${input.address?.trim() || null}, ${placeCategory}, 0, ${now}, ${now}
         )
         ON CONFLICT (slug) DO NOTHING
         RETURNING *
@@ -187,6 +198,7 @@ export async function createStore(input: CreateStoreInput): Promise<Store> {
     slug: uniqueSlug(input.slug || name, db.stores),
     placeId,
     address: input.address?.trim() || undefined,
+    placeCategory: placeCategory ?? undefined,
     scanCount: 0,
     createdAt: now,
     updatedAt: now,
@@ -213,6 +225,13 @@ export async function updateStore(
         : current.placeId;
 
     if (!name) throw new Error("Store name is required");
+    const placeCategory =
+      patch.placeCategory !== undefined
+        ? patch.placeCategory.trim() || null
+        : current.placeCategory?.trim() || null;
+    if (placeCategory && placeCategory.length > 100) {
+      throw new Error("Place category must be 100 characters or fewer");
+    }
     const address =
       patch.address !== undefined
         ? patch.address.trim() || null
@@ -240,6 +259,7 @@ export async function updateStore(
               slug = ${slug},
               place_id = ${placeId},
               address = ${address},
+              place_category = ${placeCategory},
               updated_at = ${new Date().toISOString()}
           WHERE id = ${id}
           RETURNING *
@@ -266,10 +286,18 @@ export async function updateStore(
       : current.placeId;
 
   if (!name) throw new Error("Store name is required");
+  const placeCategory =
+    patch.placeCategory !== undefined
+      ? patch.placeCategory.trim() || undefined
+      : current.placeCategory;
+  if (placeCategory && placeCategory.length > 100) {
+    throw new Error("Place category must be 100 characters or fewer");
+  }
   const updated: Store = {
     ...current,
     name,
     placeId,
+    placeCategory,
     address:
       patch.address !== undefined
         ? patch.address.trim() || undefined
