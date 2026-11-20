@@ -153,7 +153,31 @@ a:hover {
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
+.field select,
+.field textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink);
+  padding: 0.75rem 0.85rem;
+  font: inherit;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.field textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+
 .field input:focus {
+  border-color: rgba(13, 122, 95, 0.55);
+  box-shadow: 0 0 0 3px rgba(18, 160, 124, 0.18);
+}
+
+.field select:focus,
+.field textarea:focus {
   border-color: rgba(13, 122, 95, 0.55);
   box-shadow: 0 0 0 3px rgba(18, 160, 124, 0.18);
 }
@@ -318,6 +342,86 @@ a:hover {
   font-size: 0.85rem;
   line-height: 1.5;
   max-width: 46rem;
+}
+
+.review-shell {
+  width: min(760px, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: 3rem 0 4rem;
+}
+
+.review-header {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.review-panel {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.category-field {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.category-field legend {
+  margin-bottom: 0.6rem;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 0.55rem;
+}
+
+.category-option {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 44px;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.category-option input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--accent);
+}
+
+.category-option:has(input:checked) {
+  border-color: rgba(13, 122, 95, 0.5);
+  background: rgba(18, 160, 124, 0.08);
+}
+
+.draft-result {
+  display: grid;
+  gap: 0.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+}
+
+.review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.review-actions .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-self: auto;
+  text-decoration: none;
 }
 
 @keyframes rise {

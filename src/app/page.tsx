@@ -14,17 +14,16 @@ export default async function HomePage() {
         <span className="pill">Legitimate Google review links · no fake posts</span>
         <h1 className="brand">ReviewQR</h1>
         <p className="tagline">
-          Create a QR for each store. Customers scan it, land on Google’s write-a-review
-          page for that place, and leave a real review themselves.
+          Create a QR for each store. Customers can draft a review from their own
+          review, edit it, and choose whether to post it on Google.
         </p>
       </header>
 
       <Dashboard initialStores={stores} baseUrl={baseUrl} />
 
       <p className="foot-note">
-        This app never posts reviews for you. It only deep-links to Google’s official
-        review form using the store’s Place ID, and tracks how many times each QR was
-        scanned.
+        AI creates an editable draft from the customer’s own notes. This app never
+        posts a review automatically; customers decide what to share on Google.
       </p>
     </main>
   );
