@@ -66,6 +66,8 @@ For local development against Neon, copy the connection string into `.env.local`
 4. Customer scans → we increment the scan count and immediately generate a complete draft from the saved store details
 5. Customer reviews the draft and copies it, then can open Google's official review form to submit it themselves if it truthfully reflects their experience
 
+Deleting a store permanently disables its QR link. Deleted slugs remain reserved and are never assigned to another store.
+
 The draft-generation endpoint is public because QR visitors need to use it. Configure usage limits/budgets with your AI provider before sharing QR codes widely. Drafts are not submitted automatically, and the customer should only post an honest review based on their actual experience.
 
 ## Google Maps link or Place ID

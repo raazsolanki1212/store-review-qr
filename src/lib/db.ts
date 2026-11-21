@@ -10,7 +10,7 @@ const IS_VERCEL = Boolean(process.env.VERCEL);
 const DATA_DIR = path.join(process.cwd(), "data");
 const DB_PATH = path.join(DATA_DIR, "stores.json");
 
-type DbShape = { stores: Store[] };
+type DbShape = { stores: Store[]; reservedSlugs?: string[] };
 type StoreRow = {
   id: string;
   name: string;
@@ -59,6 +59,21 @@ async function getDatabase(): Promise<NeonQueryFunction<false, false> | null> {
       .then(() =>
         database`ALTER TABLE stores ADD COLUMN IF NOT EXISTS store_details TEXT`,
       )
+      .then(
+        () => database`
+          CREATE TABLE IF NOT EXISTS reserved_store_slugs (
+            slug TEXT PRIMARY KEY,
+            reserved_at TIMESTAMPTZ NOT NULL
+          )
+        `,
+      )
+      .then(
+        () => database`
+          INSERT INTO reserved_store_slugs (slug, reserved_at)
+          SELECT slug, created_at FROM stores
+          ON CONFLICT (slug) DO NOTHING
+        `,
+      )
       .then(() => undefined)
       .catch((error: unknown) => {
         schemaReady = undefined;
@@ -96,7 +111,11 @@ async function ensureDb(): Promise<void> {
 async function readDb(): Promise<DbShape> {
   await ensureDb();
   const raw = await fs.readFile(DB_PATH, "utf8");
-  return JSON.parse(raw) as DbShape;
+  const db = JSON.parse(raw) as DbShape;
+  db.reservedSlugs = [
+    ...new Set([...(db.reservedSlugs ?? []), ...db.stores.map((store) => store.slug)]),
+  ];
+  return db;
 }
 
 async function writeDb(db: DbShape): Promise<void> {
@@ -104,15 +123,47 @@ async function writeDb(db: DbShape): Promise<void> {
   await fs.writeFile(DB_PATH, JSON.stringify(db, null, 2), "utf8");
 }
 
-function uniqueSlug(desired: string, stores: Store[], excludeId?: string): string {
+function uniqueSlug(
+  desired: string,
+  stores: Store[],
+  reservedSlugs: string[],
+  excludeId?: string,
+  currentSlug?: string,
+): string {
   const base = slugify(desired) || "store";
   let candidate = base;
   let i = 2;
-  while (stores.some((s) => s.slug === candidate && s.id !== excludeId)) {
+  while (
+    (candidate !== currentSlug && reservedSlugs.includes(candidate)) ||
+    stores.some((s) => s.slug === candidate && s.id !== excludeId)
+  ) {
     candidate = `${base}-${i}`;
     i += 1;
   }
   return candidate;
+}
+
+async function reserveDatabaseSlug(
+  database: NeonQueryFunction<false, false>,
+  desired: string,
+  currentSlug?: string,
+): Promise<string> {
+  const base = slugify(desired) || "store";
+  let candidate = base;
+  let suffix = 2;
+
+  while (true) {
+    if (candidate === currentSlug) return candidate;
+    const rows = await database`
+      INSERT INTO reserved_store_slugs (slug, reserved_at)
+      VALUES (${candidate}, ${new Date().toISOString()})
+      ON CONFLICT (slug) DO NOTHING
+      RETURNING slug
+    `;
+    if (rows[0]) return candidate;
+    candidate = `${base}-${suffix}`;
+    suffix += 1;
+  }
 }
 
 function isSlugConflict(error: unknown): boolean {
@@ -178,11 +229,9 @@ export async function createStore(input: CreateStoreInput): Promise<Store> {
   const database = await getDatabase();
   if (database) {
     const now = new Date().toISOString();
-    const baseSlug = slugify(input.slug || name) || "store";
-    let slug = baseSlug;
-    let suffix = 2;
 
     while (true) {
+      const slug = await reserveDatabaseSlug(database, input.slug || name);
       const rows = await database`
         INSERT INTO stores (
           id, name, slug, place_id, address, place_category, store_details, scan_count, created_at, updated_at
@@ -195,8 +244,6 @@ export async function createStore(input: CreateStoreInput): Promise<Store> {
         RETURNING *
       `;
       if (rows[0]) return toStore(rows[0] as StoreRow);
-      slug = `${baseSlug}-${suffix}`;
-      suffix += 1;
     }
   }
 
@@ -205,7 +252,11 @@ export async function createStore(input: CreateStoreInput): Promise<Store> {
   const store: Store = {
     id: nanoid(12),
     name,
-    slug: uniqueSlug(input.slug || name, db.stores),
+    slug: uniqueSlug(
+      input.slug || name,
+      db.stores,
+      db.reservedSlugs ?? [],
+    ),
     placeId,
     address: input.address?.trim() || undefined,
     placeCategory: placeCategory ?? undefined,
@@ -254,21 +305,14 @@ export async function updateStore(
       patch.address !== undefined
         ? patch.address.trim() || null
         : current.address ?? null;
-    const baseSlug = patch.slug
-      ? slugify(patch.slug) || "store"
-      : current.slug;
-    let slug = baseSlug;
-    let suffix = 2;
+    const desiredSlug = patch.slug || current.slug;
 
     while (true) {
-      const conflicts = await database`
-        SELECT id FROM stores WHERE slug = ${slug} AND id <> ${id} LIMIT 1
-      `;
-      if (conflicts.length > 0) {
-        slug = `${baseSlug}-${suffix}`;
-        suffix += 1;
-        continue;
-      }
+      const slug = await reserveDatabaseSlug(
+        database,
+        desiredSlug,
+        current.slug,
+      );
 
       try {
         const rows = await database`
@@ -287,8 +331,6 @@ export async function updateStore(
         return toStore(rows[0] as StoreRow);
       } catch (error) {
         if (!isSlugConflict(error)) throw error;
-        slug = `${baseSlug}-${suffix}`;
-        suffix += 1;
       }
     }
   }
@@ -329,12 +371,22 @@ export async function updateStore(
       patch.address !== undefined
         ? patch.address.trim() || undefined
         : current.address,
-    slug: patch.slug
-      ? uniqueSlug(patch.slug, db.stores, id)
-      : current.slug,
+    slug:
+      patch.slug && patch.slug !== current.slug
+        ? uniqueSlug(
+            patch.slug,
+            db.stores,
+            db.reservedSlugs ?? [],
+            id,
+            current.slug,
+          )
+        : current.slug,
     updatedAt: new Date().toISOString(),
   };
 
+  db.reservedSlugs = [
+    ...new Set([...(db.reservedSlugs ?? []), current.slug, updated.slug]),
+  ];
   db.stores[index] = updated;
   await writeDb(db);
   return updated;
@@ -343,7 +395,15 @@ export async function updateStore(
 export async function deleteStore(id: string): Promise<void> {
   const database = await getDatabase();
   if (database) {
-    const rows = await database`DELETE FROM stores WHERE id = ${id} RETURNING id`;
+    const rows = await database`
+      WITH removed AS (
+        DELETE FROM stores WHERE id = ${id} RETURNING slug
+      )
+      INSERT INTO reserved_store_slugs (slug, reserved_at)
+      SELECT slug, ${new Date().toISOString()} FROM removed
+      ON CONFLICT (slug) DO NOTHING
+      RETURNING slug
+    `;
     if (rows.length === 0) throw new Error("Store not found");
     return;
   }
@@ -351,6 +411,11 @@ export async function deleteStore(id: string): Promise<void> {
   const db = await readDb();
   const next = db.stores.filter((s) => s.id !== id);
   if (next.length === db.stores.length) throw new Error("Store not found");
+  const deletedStore = db.stores.find((store) => store.id === id);
+  if (!deletedStore) throw new Error("Store not found");
+  db.reservedSlugs = [
+    ...new Set([...(db.reservedSlugs ?? []), deletedStore.slug]),
+  ];
   db.stores = next;
   await writeDb(db);
 }

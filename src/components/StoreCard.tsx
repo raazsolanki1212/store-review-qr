@@ -201,7 +201,13 @@ export function StoreCard({ store, baseUrl, onDeleted }: Props) {
   }
 
   async function handleDelete() {
-    if (!confirm(`Delete “${store.name}”? This cannot be undone.`)) return;
+    if (
+      !confirm(
+        `Delete “${store.name}”? This cannot be undone, and its QR link will be permanently disabled.`,
+      )
+    ) {
+      return;
+    }
     setBusy(true);
     try {
       const res = await fetch(`/api/stores/${store.id}`, { method: "DELETE" });
