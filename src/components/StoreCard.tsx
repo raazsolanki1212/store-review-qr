@@ -225,6 +225,7 @@ export function StoreCard({ store, baseUrl, onDeleted }: Props) {
           {store.placeCategory ? (
             <p className="muted">{store.placeCategory}</p>
           ) : null}
+          {store.storeDetails ? <p className="muted">{store.storeDetails}</p> : null}
           {store.address ? <p className="muted">{store.address}</p> : null}
           <p className="meta">
             <span>{store.scanCount} scans</span>

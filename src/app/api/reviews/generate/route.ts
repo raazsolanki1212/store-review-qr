@@ -4,12 +4,7 @@ import {
   generateReviewDraft,
   getAvailableReviewProviders,
 } from "@/lib/review-ai";
-import {
-  REVIEW_CATEGORIES,
-  type ReviewProvider,
-} from "@/lib/review-types";
-
-const MAX_CATEGORIES = 5;
+import type { ReviewProvider } from "@/lib/review-types";
 
 export const maxDuration = 60;
 
@@ -28,26 +23,9 @@ export async function POST(request: Request) {
 
   const input = body as Record<string, unknown>;
   const slug = typeof input.slug === "string" ? input.slug.trim() : "";
-  const categories = input.categories;
 
   if (!slug || slug.length > 100) {
     return NextResponse.json({ error: "A valid store is required." }, { status: 400 });
-  }
-
-  if (
-    !Array.isArray(categories) ||
-    categories.length === 0 ||
-    categories.length > MAX_CATEGORIES ||
-    !categories.every(
-      (category) =>
-        typeof category === "string" &&
-        REVIEW_CATEGORIES.some((item) => item.id === category),
-    )
-  ) {
-    return NextResponse.json(
-      { error: "Choose between 1 and 5 review topics." },
-      { status: 400 },
-    );
   }
 
   const store = await getStoreBySlug(slug);
@@ -70,7 +48,8 @@ export async function POST(request: Request) {
         provider,
         storeName: store.name,
         placeCategory: store.placeCategory,
-        categories: categories as string[],
+        address: store.address,
+        storeDetails: store.storeDetails,
       });
       return NextResponse.json({ draft });
     } catch (error) {

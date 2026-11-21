@@ -17,8 +17,8 @@ export default async function HomePage() {
         <span className="pill">Legitimate Google review links · no fake posts</span>
         <h1 className="brand">ReviewQR</h1>
         <p className="tagline">
-          Create a QR for each store. Customers can draft a review from their own
-          review, edit it, and choose whether to post it on Google.
+          Create a QR for each store. Customers get an editable review starter
+          as soon as they scan, then can personalize it before sharing on Google.
         </p>
       </header>
 
@@ -29,8 +29,8 @@ export default async function HomePage() {
       )}
 
       <p className="foot-note">
-        AI creates an editable draft from the customer’s own notes. This app never
-        posts a review automatically; customers decide what to share on Google.
+        AI uses the store details to create an editable starter, not a claim about
+        a customer’s visit. Customers must personalize it and decide what to share.
       </p>
     </main>
   );

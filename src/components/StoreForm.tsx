@@ -12,6 +12,7 @@ export function StoreForm({ onCreated }: Props) {
   const [placeId, setPlaceId] = useState("");
   const [address, setAddress] = useState("");
   const [placeCategory, setPlaceCategory] = useState("");
+  const [storeDetails, setStoreDetails] = useState("");
   const [slug, setSlug] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -30,6 +31,7 @@ export function StoreForm({ onCreated }: Props) {
           placeId,
           address: address || undefined,
           placeCategory: placeCategory || undefined,
+          storeDetails: storeDetails || undefined,
           slug: slug || undefined,
         }),
       });
@@ -41,6 +43,7 @@ export function StoreForm({ onCreated }: Props) {
       setPlaceId("");
       setAddress("");
       setPlaceCategory("");
+      setStoreDetails("");
       setSlug("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -110,6 +113,21 @@ export function StoreForm({ onCreated }: Props) {
         </datalist>
         <p className="hint">
           Helps AI tailor the review draft to this type of place.
+        </p>
+      </div>
+
+      <div className="field">
+        <label htmlFor="storeDetails">Store details (optional)</label>
+        <textarea
+          id="storeDetails"
+          value={storeDetails}
+          onChange={(e) => setStoreDetails(e.target.value)}
+          placeholder="A short detail about the store, its specialties, or services"
+          maxLength={500}
+          rows={3}
+        />
+        <p className="hint">
+          Gives the AI accurate context for the review draft. Up to 500 characters.
         </p>
       </div>
 

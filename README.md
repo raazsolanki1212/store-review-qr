@@ -1,6 +1,6 @@
 # ReviewQR
 
-Next.js app that generates **store-specific QR codes**. Scanning a code opens a page where customers can draft a review from selected topics and their own visit notes, then copy it and choose whether to continue to Google’s review form.
+Next.js app that generates **store-specific QR codes**. Scanning a code opens a page that immediately generates an editable review starter using the store details saved in the dashboard. Customers can personalize and copy it, then choose whether to continue to Google’s review form.
 
 This does **not** auto-post reviews to Google Maps (Google does not allow that, and fake/AI-posted reviews violate Google policy).
 
@@ -41,7 +41,7 @@ Generate a signing secret with:
 node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
 ```
 
-For Vercel, add these in **Project Settings → Environment Variables**. Do not prefix AI keys with `NEXT_PUBLIC_`; customers' notes are sent to whichever provider they select.
+For Vercel, add these in **Project Settings → Environment Variables**. Do not prefix AI keys with `NEXT_PUBLIC_`; store details are sent to the configured provider when a QR is scanned.
 
 After changing the QR base URL in production, download and print fresh QR codes. Previously printed codes still contain the old deployment-specific URL.
 
@@ -60,12 +60,11 @@ For local development against Neon, copy the connection string into `.env.local`
 
 ## How it works
 
-1. Add a store with a **Google Maps shared link** or Google Place ID
+1. Add a store with a **Google Maps shared link** or Google Place ID, category, address, and optional short store details
 2. App creates a short link: `/r/{slug}`
 3. Download / print the QR for that link
-4. Customer scans → we increment the scan count → show the review-draft page
-5. Customer selects topics and chooses OpenAI, Google Gemini, or Groq
-6. Customer reviews/edits and copies the draft, then can open Google's official review form to submit it themselves
+4. Customer scans → we increment the scan count and immediately generate an editable starter from the saved store details
+5. Customer adds their real experience, reviews/edits and copies the draft, then can open Google's official review form to submit it themselves
 
 The draft-generation endpoint is public because QR visitors need to use it. Configure usage limits/budgets with your AI provider before sharing QR codes widely. Drafts are not submitted automatically, and the customer should only post an honest review based on their actual experience.
 
@@ -80,14 +79,14 @@ The draft-generation endpoint is public because QR visitors need to use it. Conf
 | Method | Path | Purpose |
 |--------|------|---------|
 | `GET` | `/api/stores` | List stores |
-| `POST` | `/api/stores` | Create store `{ name, placeId, address?, placeCategory?, slug? }` |
+| `POST` | `/api/stores` | Create store `{ name, placeId, address?, placeCategory?, storeDetails?, slug? }` |
 | `DELETE` | `/api/stores/:id` | Delete store |
 | `GET` | `/api/stores/:id/qr` | Download PNG QR |
 | `GET` | `/api/stores/:id/qr?format=json` | QR data URL + short link |
 | `POST` | `/api/auth/login` | Sign in with `{ id, password }` |
 | `POST` | `/api/auth/logout` | Sign out |
 | `GET` | `/r/:slug` | Track a scan and redirect to the review-draft page |
-| `POST` | `/api/reviews/generate` | Generate a draft from `{ slug, provider, categories }` |
+| `POST` | `/api/reviews/generate` | Generate a draft from saved store details using `{ slug }` |
 
 ## Project path
 

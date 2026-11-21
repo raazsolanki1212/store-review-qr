@@ -1,41 +1,32 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { REVIEW_CATEGORIES, type ReviewProvider } from "@/lib/review-types";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type Props = {
   slug: string;
   storeName: string;
-  providers: ReviewProvider[];
+  aiConfigured: boolean;
   reviewUrl: string;
 };
 
-export function ReviewGenerator({ slug, storeName, providers, reviewUrl }: Props) {
-  const [categories, setCategories] = useState<string[]>([]);
+export function ReviewGenerator({ slug, storeName, aiConfigured, reviewUrl }: Props) {
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(aiConfigured);
   const [copied, setCopied] = useState(false);
+  const requestedSlug = useRef<string | null>(null);
 
-  function toggleCategory(category: string) {
-    setCategories((selected) =>
-      selected.includes(category)
-        ? selected.filter((item) => item !== category)
-        : [...selected, category],
-    );
-  }
-
-  async function handleGenerate(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  const generateDraft = useCallback(async () => {
     setError(null);
     setCopied(false);
+    setDraft("");
     setLoading(true);
 
     try {
       const response = await fetch("/api/reviews/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug, categories }),
+        body: JSON.stringify({ slug }),
       });
       const data: unknown = await response.json();
       if (!data || typeof data !== "object") {
@@ -60,7 +51,13 @@ export function ReviewGenerator({ slug, storeName, providers, reviewUrl }: Props
     } finally {
       setLoading(false);
     }
-  }
+  }, [slug]);
+
+  useEffect(() => {
+    if (!aiConfigured || requestedSlug.current === slug) return;
+    requestedSlug.current = slug;
+    void generateDraft();
+  }, [aiConfigured, generateDraft, slug]);
 
   async function copyDraft() {
     setError(null);
@@ -74,7 +71,7 @@ export function ReviewGenerator({ slug, storeName, providers, reviewUrl }: Props
 
   return (
     <section className="panel review-panel" aria-label={`Review ${storeName}`}>
-      {providers.length === 0 ? (
+      {!aiConfigured ? (
         <div className="panel-header">
           <h2>AI drafting is not configured</h2>
           <p>
@@ -84,41 +81,30 @@ export function ReviewGenerator({ slug, storeName, providers, reviewUrl }: Props
         </div>
       ) : (
         <>
-          <form className="stack-form" onSubmit={handleGenerate}>
-            <fieldset className="category-field">
-              <legend>What stood out? Select up to 5 topics.</legend>
-              <div className="category-grid">
-                {REVIEW_CATEGORIES.map((category) => (
-                  <label className="category-option" key={category.id}>
-                    <input
-                      type="checkbox"
-                      checked={categories.includes(category.id)}
-                      disabled={
-                        !categories.includes(category.id) && categories.length >= 5
-                      }
-                      onChange={() => toggleCategory(category.id)}
-                    />
-                    <span>{category.label}</span>
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-
-            {error ? <p className="error" role="alert">{error}</p> : null}
-
-            <button
-              type="submit"
-              className="btn-primary"
-              disabled={loading || categories.length === 0}
-            >
-              {loading ? "Generating…" : "Generate review draft"}
-            </button>
-          </form>
-
+          {loading && !draft ? (
+            <p className="hint" aria-live="polite">
+              Creating your review draft…
+            </p>
+          ) : null}
+          {error ? (
+            <div className="stack-form">
+              <p className="error" role="alert">{error}</p>
+              {!draft ? (
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={() => void generateDraft()}
+                  disabled={loading}
+                >
+                  {loading ? "Generating…" : "Try again"}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
           {draft ? (
             <div className="draft-result">
               <div className="field">
-                <label htmlFor="review-draft">Your editable draft</label>
+                <label htmlFor="review-draft">Your editable review draft</label>
                 <textarea
                   id="review-draft"
                   value={draft}
@@ -140,8 +126,8 @@ export function ReviewGenerator({ slug, storeName, providers, reviewUrl }: Props
                 </a>
               </div>
               <p className="hint">
-                Check and edit the draft so it accurately reflects your experience
-                before sharing it on Google.
+                Add your real experience and edit anything that does not reflect
+                your visit before sharing it on Google.
               </p>
             </div>
           ) : null}

@@ -20,14 +20,14 @@ export default async function ReviewPage({ params }: Props) {
         <span className="pill">Your experience, your words</span>
         <h1 className="brand">Review {store.name}</h1>
         <p className="tagline">
-          Select the topics that stood out during your visit. AI will turn them
-          into a natural review draft for you to review and edit.
+          Your review draft is being prepared using the store details. Add your
+          own experience and edit it before sharing.
         </p>
       </header>
       <ReviewGenerator
         slug={store.slug}
         storeName={store.name}
-        providers={getAvailableReviewProviders()}
+        aiConfigured={getAvailableReviewProviders().length > 0}
         reviewUrl={buildGoogleReviewUrl(store.placeId)}
       />
       <p className="foot-note">
