@@ -1,6 +1,6 @@
 # ReviewQR
 
-Next.js app that generates **store-specific QR codes**. Scanning a code opens a page that immediately generates an editable review starter using the store details saved in the dashboard. Customers can personalize and copy it, then choose whether to continue to Google’s review form.
+Next.js app that generates **store-specific QR codes**. Scanning a code opens a page that immediately generates a complete review draft using the store details saved in the dashboard. Customers can review and copy it, then choose whether to continue to Google’s review form.
 
 This does **not** auto-post reviews to Google Maps (Google does not allow that, and fake/AI-posted reviews violate Google policy).
 
@@ -63,8 +63,8 @@ For local development against Neon, copy the connection string into `.env.local`
 1. Add a store with a **Google Maps shared link** or Google Place ID, category, address, and optional short store details
 2. App creates a short link: `/r/{slug}`
 3. Download / print the QR for that link
-4. Customer scans → we increment the scan count and immediately generate an editable starter from the saved store details
-5. Customer adds their real experience, reviews/edits and copies the draft, then can open Google's official review form to submit it themselves
+4. Customer scans → we increment the scan count and immediately generate a complete draft from the saved store details
+5. Customer reviews the draft and copies it, then can open Google's official review form to submit it themselves if it truthfully reflects their experience
 
 The draft-generation endpoint is public because QR visitors need to use it. Configure usage limits/budgets with your AI provider before sharing QR codes widely. Drafts are not submitted automatically, and the customer should only post an honest review based on their actual experience.
 

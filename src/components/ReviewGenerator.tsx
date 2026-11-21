@@ -126,8 +126,7 @@ export function ReviewGenerator({ slug, storeName, aiConfigured, reviewUrl }: Pr
                 </a>
               </div>
               <p className="hint">
-                Add your real experience and edit anything that does not reflect
-                your visit before sharing it on Google.
+                Share this draft only if it accurately reflects your experience.
               </p>
             </div>
           ) : null}
